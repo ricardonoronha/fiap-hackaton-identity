@@ -11,7 +11,7 @@ jobs:
 
     env:
       K8S_DIR: k8s
-      IMAGE_NAME: properties-api
+      IMAGE_NAME: auth-api
       RUN_TAG: ${{ github.run_number }}
 
     steps:
