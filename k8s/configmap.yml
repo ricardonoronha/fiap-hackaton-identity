@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+  namespace: agrosolutions-auth
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  JwtSettings__ExpirationMinutes: "60"
+  

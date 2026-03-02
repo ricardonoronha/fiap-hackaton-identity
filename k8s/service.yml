@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  namespace: agrosolutions-auth
+  labels:
+    app: auth-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: auth-api
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+        - name: auth-api
+          image: #{ImageName}#
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+
+          envFrom:
+            - configMapRef:
+                name: auth-config
+
+          env:
+            
+            - name: ConnectionStrings__Auth
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: AUTH_CONNECTION_STRING
+      
+            - name: Jwt__Issuer
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: JWT_ISSUER
+
+            - name: Jwt__Audience
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: JWT_AUDIENCE
+
+            - name: Jwt__Secret
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: JWT_KEY
+
+          # HPA precisa de requests (principalmente CPU). Ajuste para sua realidade.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "400Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-api
+  namespace: agrosolutions-auth
+  labels:
+    app: auth-api
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-api
+  namespace: agrosolutions-auth
+  labels:
+    app: auth-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agrosolutions-auth
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
