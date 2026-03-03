@@ -62,11 +62,6 @@ app.MapControllers();
 app.MapHealthChecks("/healthz");
 
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AuthContext>();
-    db.Database.EnsureCreated();
-    db.Database.Migrate();
-}
+
 
 app.Run();
